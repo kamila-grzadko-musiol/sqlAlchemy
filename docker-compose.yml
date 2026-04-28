@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:latest
+    volumes:
+      - mysql:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_1
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user1234
+      MYSQL_TCP_POST: 3307
+    ports:
+      - '3307:3307'
+    expose:
+      - 3307
+volumes:
+  mysql:

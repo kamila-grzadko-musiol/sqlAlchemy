@@ -1,0 +1,41 @@
+------------------------------------------------------------------------------------------------
+Jak SqlAlchemy porozumiewa sie z konkretna baza danych np. MySQL?
+------------------------------------------------------------------------------------------------
+
+1. Piszesz kod Pythona, który korzysta z SQLAlchemy do wykonywania operacji na bazie danych
+   (np. CRUD: Create, Read, Update, Delete).
+
+2. SQLAlchemy ORM / SQLAlchemy Core
+   SQLAlchemy ORM: Wyższa warstwa, umożliwia mapowanie klas Python (modeli) na tabele MySQL.
+   SQLAlchemy Core: Niższa warstwa, umożliwia ręczne pisanie zapytań SQL przy pomocy obiektów Python.
+   SQLAlchemy przekształca obiekty i operacje na kod SQL, który rozumie baza danych.
+
+3. Dialekt SQLAlchemy (np. MySQL Dialect)
+   Dialekt jest odpowiedzialny za tłumaczenie zapytań SQLAlchemy na SQL specyficzny dla MySQL.
+   Przykład: MySQL Dialect generuje odpowiedni składniowo SQL dla MySQL.
+
+4. Biblioteka sterownika (Driver)
+   SQLAlchemy korzysta z sterowników baz danych do komunikacji np. z MySQL.
+   Popularne sterowniki MySQL:
+   -> mysqlclient (oparty na MySQL-Python)
+   -> PyMySQL (czysty Python)
+   -> MySQL Connector/Python (oficjalny sterownik MySQL).
+   Sterownik otwiera połączenie TCP/IP do serwera MySQL.
+
+5. Serwer MySQL
+   Serwer MySQL odbiera zapytanie SQL wygenerowane przez SQLAlchemy.
+   Serwer przetwarza zapytanie, wykonuje operację na bazie danych i zwraca wynik.
+
+6. Odpowiedz serwera MySQL
+   Wyniki zapytania SQL są przesyłane z powrotem przez sterownik do SQLAlchemy.
+
+7. SQLAlchemy odbiera odpowiedź od sterownika, przekształca ją z formatu bazy danych
+   na obiekty Python.
+   W ORM: wyniki są mapowane na odpowiednie klasy Pythona (instancje modeli).
+   W Core: wyniki mogą być zwracane jako surowe dane w formie krotek lub słowników.
+
+8. Aplikacja Python
+   Wyniki zapytania są teraz dostępne dla Twojego kodu Python jako obiekty lub dane,
+   które możesz przetwarzać i wykorzystywać.
+
+https://docs.sqlalchemy.org/en/20/intro.html#installation-guide
