@@ -9,10 +9,8 @@ services:
       MYSQL_DATABASE: db_1
       MYSQL_USER: user
       MYSQL_PASSWORD: user1234
-      MYSQL_TCP_POST: 3307
     ports:
-      - '3307:3307'
-    expose:
-      - 3307
+      - '3307:3306'  # Mapujemy port 3307 (Twój komputer) na 3306 (kontener)
+    # expose i MYSQL_TCP_PORT są tutaj zbędne i mogą wprowadzać błąd
 volumes:
   mysql:

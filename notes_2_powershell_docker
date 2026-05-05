@@ -1,0 +1,40 @@
+docker ps -a
+
+docker volume prune --all
+WARNING! This will remove all local volumes not used by at least one container.
+
+docker system prune --all
+WARNING! This will remove:
+  - all stopped containers
+  - all networks not used by at least one container
+  - all images without at least one container associated to them
+  - all build cache
+
+
+
+file----> docker_compose.yml
+
+services:
+  mysql:
+    image: mysql:latest
+    volumes:
+      - mysql:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_1
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user1234
+      MYSQL_TCP_POST: 3307
+    ports:
+      - '3307:3307'
+    expose:
+      - 3307
+volumes:
+  mysql:
+
+budowanie
+power shell --->  docker-compose up -d --build
+
+usun wolumeny docker-compose down -v
+uruchomienie ponowne docker-compose up -d
