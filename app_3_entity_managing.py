@@ -83,7 +83,7 @@ def main() -> None:
     # --------------------------------------------------------------------------------------------
     # Base.metadata przechowuje informacje o wszystkich tabelach
     metadata = Base.metadata
-    # metadata.drop_all(engine) #Usuwamy tabele w bazie danych
+    metadata.drop_all(engine) #Usuwamy tabele w bazie danych
     metadata.create_all(engine) #Realizujemy tworzenia tabel w bazie danych
 
 
@@ -171,7 +171,7 @@ def main() -> None:
             print('-------------------------')
             print(person_sylwia)
 
-            person_kama.age = 100
+            # person_kama.age = 100
             session.commit()
             print('-------------------------')
             print(person_kama)
@@ -186,8 +186,156 @@ def main() -> None:
             #     salary=Decimal('13000.34'),
             #     is_active=False)
             #
-            # session.add(person_sylwia)
-            # session.commit()
+            session.add(person_sylwia)
+            session.commit()
+
+            # Pobieranie wszystkich rekordów z tabeli people
+
+            people = session.query(Person).all()
+            print('-----------------------------------------------------------------------------------------------')
+            for person in people:
+                print(person)
+            print('-----------------------------------------------------------------------------------------------')
+            # Pobieranie po konkretnym ID
+
+            # Metoda one
+            # Jeśli zapytanie zwróci więcej niż jeden wynik, zostanie rzucony
+            # wyjątek MultipleResultsFound.
+            # Jeśli zapytanie nie zwróci żadnego wyniku, zostanie rzucony
+            # wyjątek NoResultFound.
+            person = session.query(Person).filter_by(id=1).one()
+            print(person)
+
+
+            print('-----------------------------------------------------------------------------------------------')
+            # Metoda one_or_none
+            # Zwraca dokładnie jeden wynik, jeśli istnieje, lub None, jeśli brak wyników.
+            # Jeśli zapytanie zwróci więcej niż jeden wynik, zostanie rzucony wyjątek
+            # MultipleResultsFound.
+            person = session.query(Person).filter_by(id=1).one_or_none()
+            print(person)
+
+            print('-----------------------------------------------------------------------------------------------')
+            # Metoda first
+            # Zwraca pierwszy wynik pasujący do zapytania lub None, jeśli brak wyników.
+            # Nie rzuca wyjątków, nawet jeśli istnieje więcej wyników — zwraca po prostu
+            # pierwszy.
+            # Może być mniej wydajne w przypadku dużych zbiorów danych, jeśli nie użyto
+            # dodatkowych ograniczeń jak LIMIT.
+            person = session.query(Person).filter_by(id=1).first()
+            print(person)
+
+            print('-----------------------------------------------------------------------------------------------')
+            # Metoda get - tylko dla kluczy
+            # Pobiera rekord na podstawie klucza głównego.
+            # Jeśli rekord istnieje, zwraca obiekt ORM.
+            # Jeśli nie istnieje, zwraca None.
+            # W przypadku braku wyniku nie rzuca żadnego wyjątku.
+            person = session.get(Person, 1)
+            print(person)
+            # Metoda get w pierwszej kolejnosci sprawdza, czy jest instancja
+            # powiazana z wymaganym id w pamieci sesji i jesli tak nie wykonuje
+            # dodatkowego sql.
+
+            """
+            --------------------------------------------------------------------------------
+             CACHE SESJI - jak dziala
+            --------------------------------------------------------------------------------
+            Identity Map to mechanizm SQLAlchemy ORM, który mapuje obiekty Python na rekordy bazy 
+            danych i zapewnia ich jednoznaczność w ramach jednej sesji. Dzięki temu każdy rekord 
+            w bazie danych jest reprezentowany przez dokładnie jeden obiekt Python w obrębie tej 
+            samej sesji. Działa to na zasadzie cache, który eliminuje potrzebę wielokrotnego pobierania 
+            tego samego rekordu z bazy danych.
+
+            Przypisanie obiektu do cache przy pierwszym pobraniu
+            Gdy pobierasz obiekt z bazy danych (np. za pomocą session.get() lub session.query()), 
+            SQLAlchemy rejestruje go w sesji.
+            Rejestracja odbywa się przy użyciu klucza głównego (Primary Key) jako unikalnego identyfikatora.
+            Jeśli obiekt o konkretnym id jest pobrany po raz pierwszy, SQLAlchemy doda go do Identity Map.
+            Przy kolejnym pobraniu tego samego obiektu za pomocą session.get(), SQLAlchemy sprawdza, czy 
+            obiekt istnieje w cache. Jeśli obiekt jest w cache, SQLAlchemy nie wykonuje zapytania 
+            SELECT – zwraca obiekt z pamięci.
+
+            Cache działa tylko w ramach jednej sesji
+            Cache (Identity Map) działa tylko dla aktywnej sesji SQLAlchemy.
+            Po zamknięciu sesji (session.close()), Identity Map jest usuwane, a obiekty stają się odłączone 
+            (detached).
+
+            Zmiany na obiektach są śledzone w cache
+            SQLAlchemy monitoruje zmiany na obiektach znajdujących się w Identity Map.
+            Zmiany są automatycznie synchronizowane z bazą danych przy wywołaniu session.commit() 
+            lub session.flush().
+
+            Usuwanie obiektów z cache
+            Obiekty mogą być usunięte z Identity Map za pomocą session.expunge() lub session.close().
+            Po usunięciu obiektu z cache staje się on odłączony (detached).            
+
+            flush(): Jeśli chcesz wysłać zmiany do bazy przed commit() (np. aby uzyskać ID wygenerowane 
+            przez bazę).
+
+            commit(): Gdy chcesz trwale zapisać zmiany w bazie.
+
+            expunge(): Jeśli chcesz odłączyć konkretny obiekt od sesji.
+
+            close(): Gdy zakończysz pracę z sesją i chcesz zwolnić zasoby.
+
+            """
+
+            person_pawel = Person(
+                name='Pawel',
+                age=30,
+                birthdate=date(1995, 2, 23),
+                last_login_datetime=datetime.now(),
+                gender=Gender.MALE,
+                salary=Decimal('4000.23'),
+                is_active=False)
+
+            session.add(person_pawel)
+            # Wysyłanie zmian do bazy danych, ale bez zatwierdzania
+            # Flush wysyła zapytania do bazy:
+            # -> SQLAlchemy generuje i wykonuje zapytania SQL.
+            # -> Jeśli w bazie jest mechanizm autogenerowania kluczy głównych (AUTO_INCREMENT),
+            #    to klucz główny zostanie już przypisany do obiektu.
+            # Zmiany są widoczne tylko w ramach transakcji:
+            # -> W bazie dane są widoczne tylko w tej samej transakcji.
+            # -> Jeśli wykonasz rollback(), wszystkie zmiany wykonane przez flush() zostaną
+            #    cofnięte.
+            # Bez zatwierdzenia (commit):
+            # -> Dopóki nie wykonasz commit(), zmiany nie są trwale zapisane w bazie danych.
+            # -> Inne transakcje (używające innych sesji) nie widzą tych zmian.
+            session.flush()
+
+            # Usuniecie obiektu z sesji
+            session.expunge(person_pawel)
+            print(person_pawel in session) # Obiekt nie jest już śledzony
+            person_pawel.age = 200
+
+            # Usuwanie rekordu z bazy danych z poziomu reprezentujacej go instancji modelu ORM
+            # Wersja 1
+            person_to_delete = session.get(Person, 1)
+            if person_to_delete:
+                #Oznaczenie obiektu do usuniecia, usuniecie nastapi kied bedzie commit
+                session.delete(person_to_delete)
+
+            # Wersja 2
+            # Mozesz rowniez usunac wiele obiektow przy uzyciu session.query().filter() w polaczeniu
+            # z petla
+            people_to_delete = session.query(Person).filter(Person.age > 10).all()
+            for person_to_delete in people_to_delete:
+                session.delete(person_to_delete)
+
+            # Wersja 3
+            # Usuwanie bez pobierania obiektow, jesli nie potrzebujesz ladowac obiektow do pamieci
+            session.query(Person).filter(Person.age > 10).delete(synchronize_session=False)
+
+            session.commit()
+            # Opcja synchronize_session:
+            # False: Najwydajniejsza opcja. Nie aktualizuje sesji, zakładając, że usunięcie
+            # jest prawidłowe.
+            # 'fetch': Synchronizuje sesję, pobierając klucze główne usuniętych obiektów.
+            # 'evaluate': Aktualizuje sesję na podstawie warunków użytych w zapytaniu.
+
+
         except Exception as e:
             print(e)
             #Wycofanie wszystkich niezapisanych w sesji zmian w przypadku błędu
