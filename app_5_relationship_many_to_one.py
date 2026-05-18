@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, Integer, String, create_engine
-from sqlalchemy.orm import DeclarativeBase, relationship, Session, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, relationship, Session, Mapped, mapped_column, joinedload, selectinload
 
 
 USERNAME = 'user'
@@ -41,7 +41,11 @@ class Team(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Relacja z Player
-    players: Mapped[list["Player"]] = relationship(back_populates='team', lazy='select')
+    players: Mapped[list["Player"]] = relationship(
+        back_populates='team',
+        lazy='select'
+        # lazy='joined'
+    )
 
 class Player(Base):
     __tablename__ = 'players'
@@ -96,6 +100,32 @@ def main() -> None:
             ])
             session.add_all([team1, team2])
             session.commit()
+
+            """
+            # Pobieranie danych
+            print('--------LAZY LOADING--------- - SELECT N + 1 Problem')
+            
+            # Problem SELECT N+1 to popularne zagadnienie związane z wydajnością w aplikacjach korzystających
+            # z ORM (Object-Relational Mapping), takich jak SQLAlchemy, Django ORM czy Hibernate. Polega na
+            # generowaniu nadmiernej liczby zapytań SQL przy ładowaniu danych związanych relacjami w bazie
+            # danych.
+            
+            teams = session.query(Team).all()
+            for team in teams:
+                print(f'{team.id}, {team.name}, {team.players}')
+            
+
+            print('--------EAGER LOADING - joinedload---------')
+            teams = session.query(Team).options(joinedload(Team.players)).all()
+            for team in teams:
+                print(f'{team.id}, {team.name}, {team.players}')
+            """
+
+            print('--------EAGER LOADING - selectinload---------')
+            teams = session.query(Team).options(selectinload(Team.players)).all()
+            for team in teams:
+                print(f'{team.id}, {team.name}, {team.players}')
+
 
         except Exception as e:
             print(e)
