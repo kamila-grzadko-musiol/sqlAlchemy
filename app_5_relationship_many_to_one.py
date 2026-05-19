@@ -1,5 +1,6 @@
-from sqlalchemy import ForeignKey, Integer, String, create_engine
-from sqlalchemy.orm import DeclarativeBase, relationship, Session, Mapped, mapped_column, joinedload, selectinload
+from sqlalchemy import ForeignKey, Integer, String, create_engine, select
+from sqlalchemy.orm import (DeclarativeBase, relationship, Session, Mapped, mapped_column, joinedload, selectinload,
+                            subqueryload)
 
 
 USERNAME = 'user'
@@ -116,13 +117,36 @@ def main() -> None:
             
 
             print('--------EAGER LOADING - joinedload---------')
+            Jeden sql który wyciaga wszystko za pomocą join
             teams = session.query(Team).options(joinedload(Team.players)).all()
             for team in teams:
                 print(f'{team.id}, {team.name}, {team.players}')
-            """
+           
 
             print('--------EAGER LOADING - selectinload---------')
+            Jeden SQl który pobiera teams, drugi sql ktory pobiera wszystkich potrzebnych players, ktorzy sa pozniej
+            dopasowywani do poszeczegolnych teams
             teams = session.query(Team).options(selectinload(Team.players)).all()
+            for team in teams:
+                print(f'{team.id}, {team.name}, {team.players}')
+            
+            print('--------EXPLICIT JOIN---------')
+            # Jawne łaczenie tabel w jednym zapytaniu sql
+            stmt = select(Team.name, Player.name).join(Team.players)
+            res = session.execute(stmt).all()
+            for team_name, player_name in res:
+                print(f'{team_name}, {player_name}')
+            
+            print('--------USING SUBQUERY LOAD---------')
+            teams = session.query(Team).options(subqueryload(Team.players)).all()
+            for team in teams:
+                print(f'{team.id}, {team.name}, {team.players}')
+            """
+            print('--------COMBINING STRATEGY---------')
+            teams = session.query(Team).options(
+                joinedload(Team.players)
+                # ,selectinload(Team.players)
+            ).all()
             for team in teams:
                 print(f'{team.id}, {team.name}, {team.players}')
 
@@ -132,6 +156,53 @@ def main() -> None:
             session.rollback()
         finally:
             print('Sesja została zakończona')
+
+        """
+          Lazy Loading (default)
+          Domyślnie relacje są ładowane tylko wtedy, gdy są używane.
+          Prostota, minimalna liczba danych na początku.
+          N+1 problem — każde odwołanie do relacji generuje nowe zapytanie.
+          Gdy nie zawsze potrzebujemy powiązanych danych.
+
+          Eager Loading (joinedload)
+          Ładuje relację natychmiast w jednym zapytaniu SQL z JOIN.
+          Jeden SQL zamiast wielu.
+          Może generować nadmiar danych przez duplikaty (np. powtarzanie tych samych danych Team).
+          Gdy potrzebujemy powiązanych danych natychmiast.
+
+          Eager Loading (selectinload)
+          Ładuje relację w osobnych zapytaniach za pomocą IN.
+          Unika duplikatów danych, bardziej wydajne dla dużych struktur.
+          Wykonuje wiele zapytań.
+          Dla dużych danych, gdzie JOIN generuje nadmiar.
+
+          Explicit Join
+          Używa jawnego łączenia tabel w jednym zapytaniu SQL.
+          Pełna kontrola nad SQL.
+          Więcej kodu, brak automatycznej obsługi relacji przez ORM.
+          Do zaawansowanych zapytań z filtrami.
+
+          Subquery Load
+          Ładowanie relacji za pomocą podzapytania.
+          Wydajne dla dużych struktur zagnieżdżonych danych.
+          Wykonuje wiele zapytań.
+          Gdy dane są bardzo złożone.
+
+          Wydajność
+          Dla małych danych: 
+              Lazy loading jest wystarczające, szczególnie jeśli nie korzystamy ze wszystkich relacji.
+          Dla dużych danych:
+              joinedload jest najlepsze, jeśli dane są proste i dobrze dopasowane do JOIN.
+              selectinload jest lepsze, gdy unikanie duplikatów danych jest kluczowe.
+          Zaawansowane zapytania: 
+              Explicit join zapewnia najwyższą kontrolę.
+
+          Kiedy używać?
+          Lazy loading: Gdy nie zawsze potrzebujesz relacji i masz małe dane.
+          Eager loading (joinedload/selectinload): Kiedy chcesz uniknąć wielu zapytań i potrzebujesz całych struktur.
+          Explicit join: Do skomplikowanych zapytań SQL, np. z filtrami na relacjach.
+          Subquery load: Gdy masz złożone dane w wielu relacjach.        
+          """
 
 
 if __name__ == '__main__':
