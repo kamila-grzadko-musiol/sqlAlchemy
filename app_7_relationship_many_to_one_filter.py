@@ -72,6 +72,7 @@ def main() -> None:
 
         # --------------------------------------------------------------------------------------------------------------
         # Lazy loading (lazy='select') - filtrowanie po stronie SQL
+        # Dalej jest problem select n + 1 ale filtrowanie players odbywa sie po stronie sql
         # teams = session.query(Team).filter(Team.name.like('Team%')).all()
         # for team in teams:
         #     # Dalej masz select n +1 problem ale filtrowanie players odbywa się na poziomie sql
@@ -143,7 +144,7 @@ def main() -> None:
         # for team in teams:
         #     print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
 
-        # WNIOSEK: join pomaga w jdnym select zrobic filtrowanie po Team oraz players ale
+        # WNIOSEK: join pomaga w jednym select zrobic filtrowanie po Team oraz players ale
         # potem kiedy chcesz odwolac sie do players moze generowac dodatkowy sql
 
         # --------------------------------------------------------------------------------------------------------------
@@ -165,16 +166,61 @@ def main() -> None:
         # WNIOSEK: zeby join "zrozumial" ze moze to co w pierwszym sql zaciagnac i juz potem nie
         # robic kolejnych sql dla team.players uzyj contains_eager
 
-        # A co jesli nie ma fitrowania po stronie players - joinedload? = jeden select
-
-        # teams = session.query(Team).options(joinedload(Team.players)).all()
+        # --------------------------------------------------------------------------------------------------------------
+        # A co jesli nie ma fitrowania po stronie players - joinedload?
+        # teams = session.query(Team).options(joinedload(Team.players)).filter(Team.name.like('Team%')).all()
+        # print(teams)
+        # for team in teams:
+        #     print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
+        #
+        #
+        # teams = session.query(Team).filter(Team.name.like('Team%')).options(joinedload(Team.players)).all()
         # print(teams)
         # for team in teams:
         #     print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
 
         # A co jesli nie ma fitrowania po stronie players - join?
-        print('*********************')
-        teams = session.query(Team).join(Team.players).all()
+        # teams = session.query(Team).join(Team.players).filter(Team.name.like('Team%')).all()
+        # print(teams)
+        # for team in teams:
+        #     print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
+
+        # WNIOSEK: Kiedy nie ma filtrowania po stronie players nie ma dla Ciebie znaczenia wybrana
+        # opcja bo i tak masz jeden sql.
+
+        # --------------------------------------------------------------------------------------------------------------
+        # --> Eager Loading (join + selectinload)
+        # Zalety:
+        # Lepsze przy dużych wynikach, ponieważ dane relacji (Player) są pobierane w osobnym
+        # zapytaniu.
+        # Ładowanie relacji ORM bezpośrednio w wyniku.
+
+        # Wady:
+        # Brak pełnej kontroli nad JOIN, ponieważ dane są ładowane w osobnych zapytaniach.
+        # Filtr Player.name.like(...) dotyczy tylko pierwszego zapytania (nie całej relacji).
+
+        # Kiedy używać?
+        # Gdy masz bardzo duże dane w relacjach i chcesz zminimalizować rozmiar głównego zapytania.
+
+        teams = session.query(Team).join(Team.players).filter(
+            Team.name.like('Team%'),
+            Player.name.like('Player%')
+        ).options(selectinload(Team.players)).all()
+        print(teams)
+        for team in teams:
+            print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
+
+        # --> Eager Loading (join + subqueryload)
+        # Zalety:
+        # Dobre dla relacji z dużą liczbą danych.
+        # Może być bardziej wydajne niż selectinload w niektórych sytuacjach (np. przy dużej liczbie IN).
+
+        # Kiedy używać?
+        # Przy bardziej złożonych zapytaniach lub dużych danych w relacjach.
+        teams = session.query(Team).join(Team.players).filter(
+            Team.name.like('Team%'),
+            Player.name.like('Player%')
+        ).options(subqueryload(Team.players)).all()
         print(teams)
         for team in teams:
             print(f"Team: {team.name}, Players: {[player.name for player in team.players]}")
