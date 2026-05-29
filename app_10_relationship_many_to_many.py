@@ -16,6 +16,7 @@ engine = create_engine(URL, echo=True)
 
 metadata = MetaData()
 
+
 # Association table
 actor_movie_association = Table(
     'actors_movies',
