@@ -14,10 +14,10 @@ engine = create_engine(URL, echo=True)
 class Base(DeclarativeBase):
     pass
 
-# Dziedziczenie z jedna tabela (Single Table Inheritance)
-# Wszystkie klasy dziedziczące są mapowane na jedną wspólną tabelę w bazie danych.
-# Wszystkie pola dla wszystkich klas są przechowywane w tej samej tabeli, a kolumna
-# dyskryminatora identyfikuje typ rekordu.
+
+# Dziedziczenie z połączonymi tabelami (Joined Table Inheritance) w SQLAlchemy ORM. W tej strategii
+# każda klasa w hierarchii dziedziczenia jest mapowana na własną tabelę w bazie danych. Relacja między
+# tabelą bazową a tabelami potomnymi jest realizowana za pomocą klucza obcego (ForeignKey).
 
 class Person(Base):
     __tablename__ = 'people'
@@ -77,6 +77,7 @@ def main() -> None:
         engineers = session.query(Engineer).all()
         for engineer in engineers:
             print(engineer.name)
+
 
 if __name__ == '__main__':
     main()
