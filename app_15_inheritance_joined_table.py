@@ -24,26 +24,27 @@ class Person(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50))
-    # Kolumna type przechowuje typ obiektu (np. person, engineer, manager)
     type: Mapped[str] = mapped_column(String(50))
 
-    # Parametry mapowania ORM dla dziedziczenia
     __mapper_args__ = {
-        # Wartosc domyslna w kolumnie type dla klasy bazowej
         'polymorphic_identity': 'person',
-        # Kolumna uzywana do roznicowania typow obiektow
         'polymorphic_on': type
     }
 
+
 class Engineer(Person):
+    __tablename__ = 'engineers'
+    id: Mapped[int] = mapped_column(ForeignKey('people.id'), primary_key=True)
     primary_language: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     __mapper_args__ = {
-        # Dla klasy Enigineer type ma wartosc 'engineer'
         'polymorphic_identity': 'engineer',
     }
 
+
 class Manager(Person):
+    __tablename__ = 'managers'
+    id: Mapped[int] = mapped_column(ForeignKey('people.id'), primary_key=True)
     department: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     __mapper_args__ = {
