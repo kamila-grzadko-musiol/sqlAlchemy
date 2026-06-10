@@ -94,14 +94,87 @@ class Customer(Base):
     __tablename__ = 'customers'
     # https://docs.sqlalchemy.org/en/20/core/defaults.html#identity-ddl
     id: Mapped[int] = mapped_column(Integer, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(String(255))
 
-def main() -> None:
+
+# Funkcja do tworzenia tabeli i wstawiania danych
+def create_table_and_insert_data(num: int) -> None:
     metadata = Base.metadata
     metadata.drop_all(engine)
     metadata.create_all(engine)
 
     with Session(engine) as session:
-        pass
+        for chunk in range(0, num, 10000):
+            session.bulk_insert_mappings(Customer, [
+                {
+                    'name': f'Customer name {i}',
+                    'description': f'Customer description {i}'
+                }
+                for i in range(chunk, chunk + 10000)
+            ])
+            session.commit()
+    # Przeciez uzywamy bardzo czesto add_all
+    """
+    for chunk in range(0, n, 1000):
+        session.add_all(
+            [
+                Customer(
+                    name=f"customer name {i}",
+                    description=f"customer description {i}",
+                )
+                for i in range(chunk, chunk + 1000)
+            ]
+        )
+        session.flush()
+    session.commit()
+
+    Metoda session.add_all dodaje obiekty ORM (instancje klasy) do sesji SQLAlchemy.
+    Te obiekty są zarządzane przez ORM, co oznacza, że SQLAlchemy śledzi ich stan (np. czy są zmodyfikowane).
+    Każdy obiekt jest dodawany indywidualnie, a SQLAlchemy generuje pojedyncze zapytania SQL dla każdego obiektu 
+    podczas flush lub commit.
+
+    Zalety:
+    Umożliwia pełną integrację z ORM.
+    Obsługuje relacje między obiektami (np. relationship).
+    Łatwe w użyciu, szczególnie w mniejszych aplikacjach.
+
+    Wady:
+    Wolniejsze dla dużych zestawów danych.
+    Generuje więcej zapytań SQL niż metody masowe (np. bulk_save_objects).
+
+    bulk_save_objects dodaje wiele obiektów ORM jednocześnie, ale nie śledzi ich stanu w sesji (czyli są traktowane 
+    jako "jednorazowe").
+    """
+# Funkcja do aktualizacji rekordów w sposób optymalny
+def bulk_update_customers(num: int) -> None:
+    with Session(engine) as session:
+        # Decydujesz sie na update naraz 100000 rekordow
+        # updates = [
+        #     {
+        #         'id': i,
+        #         'description': f'Customer description {i} updated'
+        #      }
+        #     for i in range(1, num + 1)
+        # ]
+        # session.bulk_update_mappings(Customer, updates)
+        # session.commit()
+        # Aktualizacja chunkami
+        chunk_size = 10000
+        with Session(engine) as session:
+            for chunk_start in range(0, num, chunk_size):
+                updates = [
+                    {
+                        'id': i,
+                        'description': f'Customer description {i} updated 2'
+                    }
+                    for i in range(chunk_start + 1, min(chunk_start + chunk_size + 1, num + 1))
+                ]
+                session.bulk_update_mappings(Customer, updates)
+            session.commit()
+def main() -> None:
+    # create_table_and_insert_data(100000)
+    bulk_update_customers(100000)
 
 
 
